@@ -312,8 +312,6 @@ class QueryDict(MultiValueDict):
 
     def __init__(self, query_string, mutable=False, encoding=None):
         super(QueryDict, self).__init__()
-        if not encoding:
-            encoding = settings.DEFAULT_CHARSET
         self.encoding = encoding
         if six.PY3:
             if isinstance(query_string, bytes):
@@ -321,24 +319,22 @@ class QueryDict(MultiValueDict):
                 query_string = query_string.decode()
             for key, value in parse_qsl(query_string or '',
                                         keep_blank_values=True,
-                                        encoding=encoding):
+                                        encoding=self.encoding):
                 self.appendlist(key, value)
         else:
             for key, value in parse_qsl(query_string or '',
                                         keep_blank_values=True):
-                self.appendlist(force_text(key, encoding, errors='replace'),
-                                force_text(value, encoding, errors='replace'))
+                self.appendlist(force_text(key, self.encoding, errors='replace'),
+                                force_text(value, self.encoding, errors='replace'))
         self._mutable = mutable
 
     @property
     def encoding(self):
-        if self._encoding is None:
-            self._encoding = settings.DEFAULT_CHARSET
         return self._encoding
 
     @encoding.setter
     def encoding(self, value):
-        self._encoding = value
+        self._encoding = value or settings.DEFAULT_CHARSET
 
     def _assert_mutable(self):
         if not self._mutable:
